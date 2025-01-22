@@ -10,26 +10,23 @@ namespace PaymentService.Domain.Entities
         public int Ciclista { get; set; }
         public DateTime HoraSolicitacao { get; private set; } = DateTime.UtcNow;
         public DateTime? HoraFinalizacao { get; set; }
-        public string Status { get; private set; } = PaymentStatus.Pending;
+        public PaymentStatus Status { get; private set; } = PaymentStatus.PENDENTE;
 
         // Dados do cartão
-        public string CardNumber { get; set; }
-        public string CardHolder { get; set; }
-        public string ExpirationDate { get; set; }
-        public string CVV { get; set; }
+        public CreditCard Cartao { get; set; }
 
         public void FinalizePayment()
         {
-            Status = PaymentStatus.Success;
+            Status = PaymentStatus.PAGA;
             HoraFinalizacao = DateTime.UtcNow;
         }
 
         public void SetAsFailed()
         {
-            Status = PaymentStatus.Failed;
+            Status = PaymentStatus.FALHA;
         }
 
-        public void SetStatus(string status)
+        public void SetStatus(PaymentStatus status)
         {
             Status = status;
         }

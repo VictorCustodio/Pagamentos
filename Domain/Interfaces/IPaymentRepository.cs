@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using PaymentService.Domain.Entities;
+using PaymentService.Domain.ValueObjects;
 
 namespace PaymentService.Domain.Interfaces
 {
@@ -9,5 +10,6 @@ namespace PaymentService.Domain.Interfaces
         Payment GetById(int id);
         IEnumerable<Payment> GetAllPending();
         void Update(Payment payment);
+        void SaveCreditCard(CreditCard creditCard);
     }
 }

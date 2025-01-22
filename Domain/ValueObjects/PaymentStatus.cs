@@ -1,10 +1,11 @@
 ﻿namespace PaymentService.Domain.ValueObjects
 {
-    public static class PaymentStatus
+    public enum PaymentStatus
     {
-        public const string Pending = "Pending";
-        public const string Success = "Success";
-        public const string Queued = "Queued";
-        public const string Failed = "Failed";
+        PENDENTE,  // Pagamento aguardando processamento
+        PAGA,      // Pagamento realizado com sucesso
+        FALHA,     // Pagamento falhou
+        CANCELADA, // Pagamento cancelado
+        OCUPADA    // Pagamento sendo processado
     }
 }

@@ -1,8 +1,9 @@
-﻿using System.Threading.Tasks;
-using PaymentService.Application.Interfaces;
+﻿using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Entities;
 using PaymentService.Domain.Interfaces;
 using PaymentService.Domain.ValueObjects;
+using System.Text;
+using System.Security.Cryptography;
 
 namespace PaymentService.Application.Services
 {
@@ -16,41 +17,71 @@ namespace PaymentService.Application.Services
             _paymentRepository = paymentRepository;
             _cieloIntegrationService = cieloIntegrationService;
         }
+
         public Payment GetPaymentById(int id)
         {
             return _paymentRepository.GetById(id);
         }
 
-
-        public Payment CreatePayment(Payment payment)
+        public Payment CreatePayment(PaymentStart paymentStart)
         {
-            payment.SetStatus(PaymentStatus.Pending);
+            Payment payment = new Payment();
+            payment.SetStatus(PaymentStatus.PENDENTE); // Atualiza para status pendente
+            payment.Valor = paymentStart.Valor;
+            payment.Ciclista = paymentStart.Ciclista;
+            payment.Cartao = new CreditCard();
+            payment.Cartao.Numero = "5234123412341234";
+            payment.Cartao.NomeTitular = "Teste";
+            payment.Cartao.Validade = "06/2025";
+            payment.Cartao.Cvv = "888";
+            _paymentRepository.SaveCreditCard(payment.Cartao);
             _paymentRepository.Add(payment);
             return payment;
         }
 
-        public Payment AddToQueue(Payment payment)
+        public Payment AddToQueue(PaymentStart paymentStart)
         {
-            payment.SetStatus(PaymentStatus.Queued);
+            Payment payment = new Payment();
+            payment.SetStatus(PaymentStatus.OCUPADA);
+            payment.Valor = paymentStart.Valor;
+            payment.Ciclista = paymentStart.Ciclista;
+            payment.Cartao = new CreditCard();
+            payment.Cartao.Numero = "5234123412341234";
+            payment.Cartao.NomeTitular = "Teste";
+            payment.Cartao.Validade = "06/2025";
+            payment.Cartao.Cvv = "888";
+            _paymentRepository.SaveCreditCard(payment.Cartao);
             _paymentRepository.Add(payment);
             return payment;
         }
 
-        public async Task<Payment> CreatePaymentAsync(Payment payment)
+        public async Task<Payment> CreatePaymentAsync(PaymentStart paymentStart)
         {
-            if (!await _cieloIntegrationService.ValidateCardAsync(payment))
+            /* Validação do cartão
+            if (!await _cieloIntegrationService.ValidateCardAsync(payment.Cartao))
             {
-                payment.SetStatus(PaymentStatus.Failed);
+                payment.SetStatus(PaymentStatus.FALHA);
+                return payment;
+            }*/
+            Payment payment = new Payment();
+            payment.Valor = paymentStart.Valor;
+            payment.Ciclista = paymentStart.Ciclista;
+            payment.Cartao = new CreditCard();//Erro para corrigir
+            payment.Cartao.Numero = "5234123412341234";
+            payment.Cartao.NomeTitular = "Teste";
+            payment.Cartao.Validade = "06/2025";
+            payment.Cartao.Cvv = "888";
+            _paymentRepository.SaveCreditCard(payment.Cartao);
+
+            // Cobrança do pagamento
+            var chargeResult = await _cieloIntegrationService.ChargePaymentAsync(payment);
+            if (!chargeResult.IsSuccessful)
+            {
+                payment.SetStatus(PaymentStatus.FALHA);
                 return payment;
             }
 
-            if (!await _cieloIntegrationService.ChargePaymentAsync(payment))
-            {
-                payment.SetStatus(PaymentStatus.Failed);
-                return payment;
-            }
-
-            payment.SetStatus(PaymentStatus.Success);
+            payment.SetStatus(PaymentStatus.PAGA);
             _paymentRepository.Add(payment);
             return payment;
         }
@@ -61,13 +92,15 @@ namespace PaymentService.Application.Services
 
             foreach (var payment in pendingPayments)
             {
-                if (await _cieloIntegrationService.ChargePaymentAsync(payment))
+                // Tenta cobrar o pagamento e atualiza o status
+                var chargeResult = await _cieloIntegrationService.ChargePaymentAsync(payment);
+                if (chargeResult.IsSuccessful)
                 {
-                    payment.SetStatus(PaymentStatus.Success);
+                    payment.SetStatus(PaymentStatus.PAGA);
                 }
                 else
                 {
-                    payment.SetStatus(PaymentStatus.Failed);
+                    payment.SetStatus(PaymentStatus.FALHA);
                 }
 
                 _paymentRepository.Update(payment);
@@ -76,9 +109,9 @@ namespace PaymentService.Application.Services
             return pendingPayments;
         }
 
-        public async Task<bool> ValidateCardAsync(Payment payment)
+        public async Task<bool> ValidateCardAsync(CreditCard card)
         {
-            return await _cieloIntegrationService.ValidateCardAsync(payment);
+            return await _cieloIntegrationService.ValidateCardAsync(card);
         }
     }
 }

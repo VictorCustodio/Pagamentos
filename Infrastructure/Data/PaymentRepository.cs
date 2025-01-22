@@ -1,38 +1,47 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using PaymentService.Domain.Entities;
 using PaymentService.Domain.Interfaces;
 using PaymentService.Domain.ValueObjects;
-using PaymentService.Domain.Entities;
+using PaymentService.Infrastructure.Context;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PaymentService.Infrastructure.Data
 {
     public class PaymentRepository : IPaymentRepository
     {
-        private readonly List<Payment> _payments = new();
+        private readonly PaymentDbContext _context;
+
+        public PaymentRepository(PaymentDbContext context)
+        {
+            _context = context;
+        }
 
         public void Add(Payment payment)
         {
-            _payments.Add(payment);
+            _context.Payments.Add(payment);
+            _context.SaveChanges();
+        }
+
+        public void SaveCreditCard(CreditCard creditCard)
+        {
+            _context.CreditCards.Add(creditCard);
+            _context.SaveChanges();
         }
 
         public Payment GetById(int id)
         {
-            return _payments.FirstOrDefault(p => p.Id == id);
+            return _context.Payments.Find(id);
         }
 
         public IEnumerable<Payment> GetAllPending()
         {
-            return _payments.Where(p => p.Status == PaymentStatus.Pending);
+            return _context.Payments.Where(p => p.Status == PaymentStatus.PENDENTE).ToList();
         }
 
         public void Update(Payment payment)
         {
-            var existingPayment = GetById(payment.Id);
-            if (existingPayment != null)
-            {
-                existingPayment.SetStatus(payment.Status);
-                existingPayment.HoraFinalizacao = payment.HoraFinalizacao;
-            }
+            _context.Payments.Update(payment);
+            _context.SaveChanges();
         }
     }
 }

@@ -1,13 +1,13 @@
-﻿/*using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PaymentService.Domain.Entities;
-using System.Collections.Generic;
-using System.Reflection.Emit;
+using PaymentService.Domain.ValueObjects;
 
 namespace PaymentService.Infrastructure.Context
 {
     public class PaymentDbContext : DbContext
     {
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<CreditCard> CreditCards { get; set; } 
 
         public PaymentDbContext(DbContextOptions<PaymentDbContext> options) : base(options)
         {
@@ -17,6 +17,7 @@ namespace PaymentService.Infrastructure.Context
         {
             base.OnModelCreating(modelBuilder);
 
+            
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -35,9 +36,30 @@ namespace PaymentService.Infrastructure.Context
 
                 entity.Property(e => e.Status)
                     .IsRequired()
+                    .HasConversion<string>() 
                     .HasMaxLength(50);
             });
+
+            modelBuilder.Entity<CreditCard>(entity =>
+            {
+                entity.HasKey(e => e.Id); 
+
+                entity.Property(e => e.Numero)
+                    .IsRequired()
+                    .HasMaxLength(19); 
+
+                entity.Property(e => e.NomeTitular)
+                    .IsRequired()
+                    .HasMaxLength(50); 
+
+                entity.Property(e => e.Validade)
+                    .IsRequired()
+                    .HasMaxLength(7); 
+
+                entity.Property(e => e.Cvv)
+                    .IsRequired()
+                    .HasMaxLength(4); 
+             });
         }
     }
 }
-*/
